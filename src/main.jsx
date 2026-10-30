@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App, Button, Card, Form, Input, Layout, Modal, Select, Space, Table, Tag, Typography, message } from 'antd'
 import { ProConfigProvider, ProLayout } from '@ant-design/pro-components'
-import { SearchOutlined, LogoutOutlined, StarFilled, WarningOutlined, MessageOutlined, StopOutlined } from '@ant-design/icons'
+import { SearchOutlined, LogoutOutlined, StarFilled, WarningOutlined, MessageOutlined, StopOutlined, CopyOutlined } from '@ant-design/icons'
 import 'antd/dist/reset.css'
 import './styles.css'
 
@@ -41,10 +41,11 @@ function Portal({ token, logout }) {
   const update = async (row, type, value) => { try { const path = type === 'featured' ? `/admin/templates/${row.id}/featured` : `/admin/templates/${row.id}/recommendation`; const body = type === 'featured' ? {active:value, confirmConflict:true} : {excluded:!value, confirmConflict:true}; await api(path, {method:'POST', body:JSON.stringify(body)}, token); message.success('状态已更新'); load() } catch (error) { message.error(error.message) } }
   const unlist = async (row, reasonCode) => { try { await api(`/admin/templates/${row.id}/listing`, {method:'POST', body:JSON.stringify({listed:false, reasonCode, reason: reasonCode === 'sexual' ? '色情内容' : '无亮点'})}, token); message.success('模板已下架'); load() } catch (error) { message.error(error.message) } }
   const showFeedback = async row => { try { const data = await api(`/templates/${row.id}/feedback`, {}, token); setFeedback({row, data}); setFeedbackText('') } catch (error) { message.error(error.message) } }
+  const copyId = async row => { try { await navigator.clipboard.writeText(row.id); message.success('模板 ID 已复制') } catch { message.error('复制失败，请手动复制') } }
   const submitFeedback = async () => { const text=feedbackText.trim(); if(!text)return message.warning('请输入反馈内容'); setFeedbackBusy(true); try { await api(`/templates/${feedback.row.id}/feedback`, {method:'POST', body:JSON.stringify({message:text, idempotencyKey:crypto.randomUUID()})}, token); message.success('反馈已提交'); setFeedbackText(''); const data=await api(`/templates/${feedback.row.id}/feedback`, {}, token); setFeedback({...feedback,data}) } catch(error) { message.error(error.message) } finally { setFeedbackBusy(false) } }
   const image = (url, alt) => url ? <img className="table-image" src={url} alt={alt} /> : <span className="no-image">暂无</span>
   const columns = [
-    {title:'模板', fixed:'left', width:300, render:(_, row) => <Space><div><Typography.Text strong>{row.name}</Typography.Text><Typography.Text type="secondary" className="id">ID: {row.shortId || row.id}</Typography.Text></div></Space>},
+    {title:'模板', fixed:'left', width:330, render:(_, row) => <Space><div><Typography.Text strong>{row.name}</Typography.Text><Space size={2} className="id"><Typography.Text type="secondary">ID: {row.shortId || row.id}</Typography.Text><Button type="text" size="small" icon={<CopyOutlined />} aria-label="复制模板 ID" title="复制完整模板 ID" onClick={() => copyId(row)} /></Space></div></Space>},
     {title:'输入参考图', width:130, render:(_, row) => image(row.examples?.[0]?.inputs?.[0]?.previewUrl, '输入参考图')},
     {title:'输出示例图', width:130, render:(_, row) => image(row.cover, '输出示例图')},
     {title:'分类', dataIndex:'categoryName', width:110},
